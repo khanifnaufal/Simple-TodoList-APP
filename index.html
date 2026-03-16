@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>To-Do List</title>
+    <link rel="icon" href="images/icon.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <div class="topbar">
+          <div class="brand">
+            <img class="brand__icon" src="images/icon.png" alt="" />
+            <div>
+              <h1 class="brand__title">To-Do List</h1>
+              <p class="brand__subtitle">Simpan otomatis. Ringan. Fokus.</p>
+            </div>
+          </div>
+
+          <div class="topbar__actions">
+            <button class="toggle" type="button" id="themeToggle" aria-label="Ganti tema">
+              <span class="toggle__dot" aria-hidden="true"></span>
+              <span class="toggle__text" id="themeLabel">Dark</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <section class="card">
+        <form class="add" id="todoForm" autocomplete="off">
+          <label class="sr-only" for="todoInput">Tambah tugas</label>
+          <input
+            id="todoInput"
+            class="add__input"
+            type="text"
+            inputmode="text"
+            placeholder="Tulis tugas baru…"
+            maxlength="140"
+            required
+          />
+          <select id="todoLabel" class="add__select" aria-label="Label tugas">
+            <option value="Pekerjaan">Pekerjaan</option>
+            <option value="Kuliah">Kuliah</option>
+            <option value="Hobby">Hobby</option>
+          </select>
+          <select id="todoPriority" class="add__select" aria-label="Prioritas tugas">
+            <option value="high">Tinggi (Merah)</option>
+            <option value="medium" selected>Sedang (Kuning)</option>
+            <option value="low">Rendah (Hijau)</option>
+          </select>
+          <input
+            id="todoDue"
+            class="add__input"
+            type="datetime-local"
+            aria-label="Batas waktu"
+          />
+          <button class="add__btn" type="submit">
+            <span class="add__btnText">Tambah</span>
+          </button>
+        </form>
+
+        <div class="tools">
+          <label class="sr-only" for="searchInput">Cari tugas</label>
+          <input
+            id="searchInput"
+            class="tools__search"
+            type="search"
+            placeholder="Cari tugas…"
+            autocomplete="off"
+          />
+          <div class="segmented" role="tablist" aria-label="Filter status">
+            <button class="segmented__btn is-active" type="button" data-filter="all">
+              Semua
+            </button>
+            <button class="segmented__btn" type="button" data-filter="active">
+              Belum
+            </button>
+            <button class="segmented__btn" type="button" data-filter="done">
+              Selesai
+            </button>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div class="meta__left">
+            <span class="pill" id="countLeft">0 belum selesai</span>
+            <span class="pill" id="progressText">Kamu sudah menyelesaikan 0 dari 0 tugas hari ini!</span>
+          </div>
+          <div class="meta__right">
+            <button class="link" type="button" id="clearDoneBtn">
+              Hapus yang selesai
+            </button>
+          </div>
+        </div>
+
+        <ul class="list" id="todoList" aria-live="polite"></ul>
+
+        <div class="empty" id="emptyState" hidden>
+          <p class="empty__title">Belum ada tugas</p>
+          <p class="empty__desc">Tambahkan tugas pertama kamu di atas.</p>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Data tersimpan di perangkat (localStorage).</span>
+      </footer>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
