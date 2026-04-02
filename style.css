@@ -551,3 +551,110 @@ html[data-theme="light"] .add__select optgroup {
   white-space: nowrap;
   border-width: 0;
 }
+
+/* --- GAMIFICATION BAR --- */
+.gamification {
+  background: var(--card2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gamification__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.gamification__level {
+  color: #a855f7;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+.gamification__streak {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+.gamification__track {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+html[data-theme="light"] .gamification__track { background: rgba(0, 0, 0, 0.05); }
+
+.gamification__bar {
+  height: 100%;
+  background: linear-gradient(90deg, #a855f7, #ec4899);
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- ROULETTE & TOOLS --- */
+.tools__actions {
+  display: flex;
+  gap: 8px;
+}
+.tools__sort {
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 12px;
+  color: var(--muted);
+  width: auto;
+}
+.link--roulette {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(168, 85, 247, 0.15));
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  color: #ec4899;
+  font-weight: bold;
+}
+.link--roulette:hover {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(168, 85, 247, 0.25));
+  color: #fce7f3;
+}
+html[data-theme="light"] .link--roulette { color: #db2777; }
+html[data-theme="light"] .link--roulette:hover { color: #be185d; }
+
+.item.is-roulette-active {
+  animation: rouletteBlink 0.3s ease infinite alternate;
+  border-color: #ec4899;
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+  transform: scale(1.02);
+  z-index: 10;
+}
+.item.is-roulette-winner {
+  border-color: #22c55e;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+  animation: winnerPulse 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform: scale(1.03);
+}
+
+@keyframes rouletteBlink {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; border-color: #a855f7; }
+}
+@keyframes winnerPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.5); }
+  50% { box-shadow: 0 0 35px rgba(34, 197, 94, 0.8); }
+}
+
+/* --- FOOTER EXPORT/IMPORT --- */
+.footer__actions {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.footer__dot {
+  color: var(--muted2);
+}
+

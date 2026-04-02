@@ -29,6 +29,17 @@
         </div>
       </header>
 
+      <!-- Gamification Bar -->
+      <div class="gamification">
+        <div class="gamification__header">
+          <span class="gamification__level" id="levelText">Level 1</span>
+          <span class="gamification__streak" id="streakText" title="Selesaikan 1 tugas tiap hari untuk menjaga streak!">0 🔥</span>
+        </div>
+        <div class="gamification__track" title="Kumpulkan XP untuk naik level!">
+          <div class="gamification__bar" id="xpBar" style="width: 0%"></div>
+        </div>
+      </div>
+
       <section class="card">
         <form class="add" id="todoForm" autocomplete="off">
           <label class="sr-only" for="todoInput">Tambah tugas</label>
@@ -71,16 +82,18 @@
             placeholder="Cari tugas…"
             autocomplete="off"
           />
-          <div class="segmented" role="tablist" aria-label="Filter status">
-            <button class="segmented__btn is-active" type="button" data-filter="all">
-              Semua
-            </button>
-            <button class="segmented__btn" type="button" data-filter="active">
-              Belum
-            </button>
-            <button class="segmented__btn" type="button" data-filter="done">
-              Selesai
-            </button>
+          <div class="tools__actions">
+            <select id="sortSelect" class="add__select tools__sort" aria-label="Urutkan tugas">
+              <option value="default">Prioritas (Default)</option>
+              <option value="newest">Terbaru</option>
+              <option value="oldest">Terlama</option>
+              <option value="deadline">Batas Waktu</option>
+            </select>
+            <div class="segmented" role="tablist" aria-label="Filter status">
+              <button class="segmented__btn is-active" type="button" data-filter="all">Semua</button>
+              <button class="segmented__btn" type="button" data-filter="active">Belum</button>
+              <button class="segmented__btn" type="button" data-filter="done">Selesai</button>
+            </div>
           </div>
         </div>
 
@@ -90,6 +103,9 @@
             <span class="pill" id="progressText">Kamu sudah menyelesaikan 0 dari 0 tugas hari ini!</span>
           </div>
           <div class="meta__right">
+            <button class="link link--roulette" type="button" id="rouletteBtn" title="Pilih satu tugas secara acak!">
+              🎲 Do It Now!
+            </button>
             <button class="link" type="button" id="clearDoneBtn">
               Hapus yang selesai
             </button>
@@ -106,6 +122,12 @@
 
       <footer class="footer">
         <span>Data tersimpan di perangkat (localStorage).</span>
+        <div class="footer__actions">
+          <button class="link" id="exportBtn" type="button">Export Data</button>
+          <span class="footer__dot">•</span>
+          <button class="link" id="importBtn" type="button">Import Data</button>
+          <input type="file" id="importInput" accept=".json" style="display: none" />
+        </div>
       </footer>
     </main>
 

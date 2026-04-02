@@ -1,12 +1,71 @@
 const STORAGE_KEY = "todolist.tasks.v1";
 const THEME_KEY = "todolist.theme.v1";
 const NOTIFIED_KEY = "todolist.dueNotified.v1";
+const GAMIFICATION_KEY = "todolist.gamification.v1";
 
 /**
  * @typedef {"Pekerjaan"|"Kuliah"|"Hobby"} Label
  * @typedef {"high"|"medium"|"low"} Priority
  * @typedef {{ id: string, text: string, label: Label, priority: Priority, dueAt: (number|null), completed: boolean, createdAt: number, completedAt: (number|null) }} Task
  */
+
+function loadGamification() {
+  const defaultGamification = { level: 1, xp: 0, streak: 0, lastStreakDate: null };
+  try {
+    const raw = localStorage.getItem(GAMIFICATION_KEY);
+    return raw ? { ...defaultGamification, ...JSON.parse(raw) } : defaultGamification;
+  } catch {
+    return defaultGamification;
+  }
+}
+
+function saveGamification(g) {
+  localStorage.setItem(GAMIFICATION_KEY, JSON.stringify(g));
+}
+
+let gamification = loadGamification();
+const LEVEL_UP_XP = 100;
+
+function checkStreakReset() {
+  if (!gamification.lastStreakDate) return;
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const yesterday = new Date(now.getTime() - 86400000).toISOString().split('T')[0];
+  
+  if (gamification.lastStreakDate !== todayStr && gamification.lastStreakDate !== yesterday) {
+    gamification.streak = 0;
+    saveGamification(gamification);
+  }
+}
+// Check on load
+checkStreakReset();
+
+function addXPForTask(task) {
+  const xpMap = { high: 50, medium: 30, low: 10 };
+  gamification.xp += xpMap[task.priority] || 10;
+  
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (gamification.lastStreakDate !== todayStr) {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    if (gamification.lastStreakDate === yesterday || !gamification.lastStreakDate) {
+      gamification.streak += 1;
+    } else {
+      gamification.streak = 1;
+    }
+    gamification.lastStreakDate = todayStr;
+  }
+  
+  // Level up logic
+  let requiredXP = gamification.level * LEVEL_UP_XP;
+  while (gamification.xp >= requiredXP) {
+    gamification.xp -= requiredXP;
+    gamification.level += 1;
+    requiredXP = gamification.level * LEVEL_UP_XP;
+  }
+  
+  saveGamification(gamification);
+  render();
+}
 
 /** @returns {Task[]} */
 function loadTasks() {
@@ -109,6 +168,7 @@ const clearDoneBtn = /** @type {HTMLButtonElement} */ (el("clearDoneBtn"));
 const searchInput = /** @type {HTMLInputElement} */ (el("searchInput"));
 const themeToggle = /** @type {HTMLButtonElement} */ (el("themeToggle"));
 const themeLabel = el("themeLabel");
+const sortSelect = /** @type {HTMLSelectElement} */ (document.getElementById("sortSelect"));
 
 const filterBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (
   document.querySelectorAll("[data-filter]")
@@ -188,7 +248,6 @@ function checkDueNotifications() {
   if (!("Notification" in window)) return;
 
   if (Notification.permission === "default") {
-    // Request once when there's something to notify.
     Notification.requestPermission().catch(() => {});
   }
 
@@ -210,7 +269,23 @@ function checkDueNotifications() {
   if (changed) saveNotifiedSet(notified);
 }
 
+function renderGamification() {
+  const levelText = document.getElementById("levelText");
+  const streakText = document.getElementById("streakText");
+  const xpBar = document.getElementById("xpBar");
+
+  if (levelText && streakText && xpBar) {
+    levelText.textContent = `Level ${gamification.level}`;
+    streakText.textContent = `${gamification.streak} 🔥`;
+    const requiredXP = gamification.level * LEVEL_UP_XP;
+    const progress = (gamification.xp / requiredXP) * 100;
+    xpBar.style.width = `${Math.min(progress, 100)}%`;
+  }
+}
+
 function render() {
+  renderGamification();
+  
   const activeCount = countActive(tasks);
   countLeftEl.textContent =
     activeCount === 0 ? "Semua selesai" : `${activeCount} belum selesai`;
@@ -229,15 +304,26 @@ function render() {
   clearDoneBtn.style.opacity = clearDoneBtn.disabled ? "0.55" : "1";
   clearDoneBtn.style.pointerEvents = clearDoneBtn.disabled ? "none" : "auto";
 
+  const sortMethod = sortSelect ? sortSelect.value : "default";
+
   list.innerHTML = visible
     .slice()
     .sort((a, b) => {
+      if (sortMethod === "newest") return b.createdAt - a.createdAt;
+      if (sortMethod === "oldest") return a.createdAt - b.createdAt;
+      if (sortMethod === "deadline") {
+         if (a.dueAt && !b.dueAt) return -1;
+         if (!a.dueAt && b.dueAt) return 1;
+         if (a.dueAt && b.dueAt) return a.dueAt - b.dueAt;
+         return a.createdAt - b.createdAt;
+      }
+      // default: priority
       const pr = priorityRank(a.priority) - priorityRank(b.priority);
       if (pr !== 0) return pr; // high first
       if (a.dueAt && b.dueAt && a.dueAt !== b.dueAt) return a.dueAt - b.dueAt;
       if (a.dueAt && !b.dueAt) return -1;
       if (!a.dueAt && b.dueAt) return 1;
-      return a.createdAt - b.createdAt;
+      return b.createdAt - a.createdAt;
     })
     .map((t) => itemTemplate(t))
     .join("");
@@ -294,6 +380,9 @@ function itemTemplate(task) {
         </div>
       </div>
       <div class="actions">
+        <button class="iconBtn" type="button" data-action="edit" title="Edit tugas" aria-label="Edit">
+          ✎
+        </button>
         <button class="iconBtn" type="button" data-action="delete" title="Hapus tugas" aria-label="Hapus">
           ✕
         </button>
@@ -334,11 +423,14 @@ form.addEventListener("submit", (e) => {
   render();
 
   form.reset();
-  // keep defaults nice
   labelSelect.value = "Pekerjaan";
   prioritySelect.value = "medium";
   input.focus();
 });
+
+if (sortSelect) {
+  sortSelect.addEventListener("change", render);
+}
 
 list.addEventListener("click", (e) => {
   const target = /** @type {HTMLElement} */ (e.target);
@@ -356,6 +448,15 @@ list.addEventListener("click", (e) => {
       tasks = tasks.filter((t) => t.id !== id);
       saveTasks(tasks);
       render();
+    } else if (action === "edit") {
+      const taskToEdit = tasks.find(t => t.id === id);
+      if (!taskToEdit) return;
+      const newText = prompt("Ubah teks tugas:", taskToEdit.text);
+      if (newText !== null && newText.trim() !== "") {
+         taskToEdit.text = sanitizeText(newText);
+         saveTasks(tasks);
+         render();
+      }
     }
     return;
   }
@@ -370,6 +471,7 @@ list.addEventListener("click", (e) => {
     if (t.id !== id) return t;
     const nextCompleted = !t.completed;
     if (nextCompleted) {
+      addXPForTask(t);
       return { ...t, completed: true, completedAt: Date.now() };
     }
     notified.delete(id);
@@ -408,6 +510,100 @@ themeToggle.addEventListener("click", () => {
   const current = document.documentElement.getAttribute("data-theme");
   applyTheme(current === "dark" ? "light" : "dark");
 });
+
+// FEATURE: Roulette
+const rouletteBtn = document.getElementById("rouletteBtn");
+if (rouletteBtn) {
+  rouletteBtn.addEventListener("click", () => {
+    const activeTasks = getVisibleTasks().filter(t => !t.completed);
+    if (activeTasks.length === 0) return alert("Belum ada tugas aktif untuk dipilih! Tambahkan tugas baru dulu.");
+    
+    // Select strictly visible uncompleted items in the DOM
+    const itemNodes = Array.from(document.querySelectorAll(".item[data-completed='false']"));
+    if (itemNodes.length === 0) return;
+
+    let count = 0;
+    const maxSpins = 15 + Math.floor(Math.random() * 10);
+    let speed = 50;
+    let currentIndex = 0;
+
+    // Disabled to prevent double-click
+    rouletteBtn.style.pointerEvents = "none";
+    rouletteBtn.style.opacity = "0.5";
+
+    function spin() {
+      itemNodes.forEach(el => el.classList.remove("is-roulette-active", "is-roulette-winner"));
+      itemNodes[currentIndex].classList.add("is-roulette-active");
+      
+      currentIndex = (currentIndex + 1) % itemNodes.length;
+      count++;
+      
+      if (count < maxSpins) {
+        speed += 12; // slow down progressively
+        setTimeout(spin, speed);
+      } else {
+        // winner
+        const winnerIndex = (currentIndex - 1 + itemNodes.length) % itemNodes.length;
+        itemNodes.forEach(el => el.classList.remove("is-roulette-active"));
+        itemNodes[winnerIndex].classList.add("is-roulette-winner");
+        
+        // Remove winner styling after a few seconds
+        setTimeout(() => {
+          itemNodes[winnerIndex].classList.remove("is-roulette-winner");
+          rouletteBtn.style.pointerEvents = "auto";
+          rouletteBtn.style.opacity = "1";
+        }, 4000);
+      }
+    }
+    spin();
+  });
+}
+
+// FEATURE: Export/Import Data
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
+const importInput = document.getElementById("importInput");
+
+if (exportBtn) {
+  exportBtn.addEventListener("click", () => {
+    const data = JSON.stringify({ tasks, gamification });
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `todolist_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+if (importBtn && importInput) {
+  importBtn.addEventListener("click", () => importInput.click());
+  importInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        if (parsed.tasks && Array.isArray(parsed.tasks)) {
+          tasks = parsed.tasks;
+          saveTasks(tasks);
+        }
+        if (parsed.gamification) {
+          gamification = parsed.gamification;
+          saveGamification(gamification);
+        }
+        render();
+        alert("Data berhasil diimport & direstorasi!");
+      } catch (err) {
+        alert("File JSON tidak valid atau rusak.");
+      }
+      e.target.value = ""; // reset input
+    };
+    reader.readAsText(file);
+  });
+}
 
 // First paint
 initTheme();
